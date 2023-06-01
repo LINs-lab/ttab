@@ -1,4 +1,6 @@
 # Test-Time Adaptation Benchmark (TTAB)
+Official implementation of the ICML 2023 paper "[On Pitfalls of Test-time Adaptation]()".
+
 
 ## Overview
 TTAB is a benchmark for standardizing and comprehensively evaluating Test-time Adaptation algorithms on a diverse array of distribution shifts.
@@ -164,9 +166,13 @@ In order to make a fair comparison across different TTA algorithms, we make reas
 In this [link](https://drive.google.com/drive/folders/1ALNIYnnTJwqP80n9pEjSWtb_UdbcrsVi?usp=sharing), we provide a set of scripts that can be used to pre-train models on the in-distribution TTAB datasets. These pre-trained models were used to benchmark baselines in our paper. Note that we adopt self-supervised learning with a rotation prediction task to train the baseline model in our paper for a fair comparison. In practice, please feel free to choose whatever pre-training methods you prefer, but please pay attention to the setup of TTA methods.
 <!-- ## Citing TTAB -->
 
-## Acknowledgements
-
-
-
-
-
+## Bibliography
+If you find this repository helpful for your project, please consider citing:
+```
+@inproceedings{zhao2023on,
+  title     = {On Pitfalls of Test-time Adaptation},
+  author    = {Zhao, Hao and Liu, Yuejiang and Alahi, Alexandre and Lin, Tao},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023},
+}
+```

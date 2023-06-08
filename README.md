@@ -1,9 +1,21 @@
 # Test-Time Adaptation Benchmark (TTAB)
-Official implementation of the ICML 2023 paper "[On Pitfalls of Test-time Adaptation](https://arxiv.org/abs/2306.03536)".
+
+This repository is the official implementation of
+<br>
+**[On Pitfalls of Test-time Adaptation](https://arxiv.org/abs/2306.03536)**, ICML, 2023
+<br>
+<a href="https://people.epfl.ch/hao.zhao/?lang=en">Hao Zhao*</a>,
+<a href="https://sites.google.com/view/yuejiangliu">Yuejiang Liu*</a>,
+<a href="https://people.epfl.ch/alexandre.alahi/?lang=en">Alexandre Alahi</a>,
+<a href="https://tlin-taolin.github.io">Tao Lin</a>
+
+> TL;DR: We introduce a test-time adaptation benchmark that systematically examines a large array of recent methods under diverse conditions. Our results reveal three common pitfalls in prior efforts.
+> - Model selection is exceedingly difficult for test-time adaptation due to online batch dependency.
+> - The effectiveness of TTA methods varies greatly depending on the quality and properties of pre-trained models.
+> - Even with oracle-based tuning, no existing methods can yet address all common classes of distribution shifts.
 
 
 ## Overview
-TTAB is a benchmark for standardizing and comprehensively evaluating Test-time Adaptation algorithms on a diverse array of distribution shifts.
 
 The TTAB package contains:
 1. Data loaders that automatically handle data processing and splitting to cover multiple significant evaluation settings considered in prior work.
@@ -169,7 +181,7 @@ In this [link](https://drive.google.com/drive/folders/1ALNIYnnTJwqP80n9pEjSWtb_U
 ## Bibliography
 If you find this repository helpful for your project, please consider citing:
 ```
-@inproceedings{zhao2023on,
+@inproceedings{zhao2023ttab,
   title     = {On Pitfalls of Test-time Adaptation},
   author    = {Zhao, Hao and Liu, Yuejiang and Alahi, Alexandre and Lin, Tao},
   booktitle = {International Conference on Machine Learning (ICML)},

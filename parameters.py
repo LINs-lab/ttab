@@ -4,8 +4,21 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser()
+    # define meta info (this part can be ignored if `monitor` package is unused).
+    parser.add_argument("--job_name", default="tta", type=str)
+    parser.add_argument("--job_id", default=None, type=str)
+    parser.add_argument("--timestamp", default=None, type=str)
+    parser.add_argument("--python_path", default="python", type=str)
+    parser.add_argument("--main_file", default="run_exp.py", type=str)
+
+    parser.add_argument("--script_path", default=None, type=str)
+    parser.add_argument("--script_class_name", default=None, type=str)
+    parser.add_argument("--num_jobs_per_node", default=2, type=int)
+    parser.add_argument("--num_jobs_per_script", default=1, type=int)
+    parser.add_argument("--wait_in_seconds_per_job", default=15, type=float)
+    
     # define test evaluation info.
-    parser.add_argument("--root_path", default="./data/logs", type=str)
+    parser.add_argument("--root_path", default="./logs", type=str)
     parser.add_argument("--data_path", default="./datasets", type=str)
     parser.add_argument(
         "--ckpt_path",

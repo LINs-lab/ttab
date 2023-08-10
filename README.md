@@ -27,6 +27,7 @@ New algorithms can be easily added and run on all of the TTAB datasets.
 
 ## News
 
+- August 2023: We released a collection of experimental setups to help you reproduce our paper results. Check more details in [issue #4](https://github.com/LINs-lab/ttab/issues/4).
 - August 2023: We released an improved pretraining script based on what we used in our project, which can cover all of benchmark datasets mentioned in our paper except ImageNet.
 
 ## Installation
@@ -44,6 +45,7 @@ The TTAB package depends on the following requirements:
 - scikit-learn>=1.0.3
 - scipy>=1.7.3
 - tqdm>=4.56.2
+- tyro>=0.5.5
 
 ## Datasets
 Distribution shift occurs when the test distribution differs from the training distribution, and it can considerably degrade performance of machine learning models deployed in the real world. The form of distribution shifts differs greatly across varying applications in practice. In TTAB, we collect 10 datasets and systematically sort them into 5 types of distribution shifts:
@@ -157,6 +159,16 @@ python run_exp.py
 ```
 
 Currently, before using the example script, you need to manually set up the `args` object in the `parameters.py`. This script is configured to use the default base model, dataset, evaluation protocol and reasonable hyperparameters.  
+
+We also provide a collection of experimental setups in `exps` to help you reproduce our paper results. For example, in order to run experiments listed in Table 2, you can create a `tmux` session and type in the following commands,
+```bash
+python run_exps.py --script_path exps/cifar10c.py --num_jobs_per_node 2 --num_jobs_per_script 1 --wait_in_seconds_per_job 3
+python run_exps.py --script_path exps/cifar100c.py --num_jobs_per_node 2 --num_jobs_per_script 1 --wait_in_seconds_per_job 3
+python run_exps.py --script_path exps/cifar10_1.py --num_jobs_per_node 2 --num_jobs_per_script 1 --wait_in_seconds_per_job 3
+python run_exps.py --script_path exps/imagenet-c.py --num_jobs_per_node 2 --num_jobs_per_script 1 --wait_in_seconds_per_job 3
+python run_exps.py --script_path exps/officehome.py --num_jobs_per_node 2 --num_jobs_per_script 1 --wait_in_seconds_per_job 3
+python run_exps.py --script_path exps/pacs.py --num_jobs_per_node 2 --num_jobs_per_script 1 --wait_in_seconds_per_job 3
+```
 
 <!-- ## Algorithms
 

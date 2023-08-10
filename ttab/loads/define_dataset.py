@@ -7,6 +7,7 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 import torch
+
 import ttab.loads.datasets.loaders as loaders
 from ttab.api import PyTorchDataset
 from ttab.loads.datasets.cifar import CIFAR10_1, CIFARSyntheticShift, LabelShiftedCIFAR
@@ -26,6 +27,7 @@ from ttab.loads.datasets.datasets import (
     OfficeHomeDataset,
     PACSDataset,
     WBirdsDataset,
+    YearBookDataset,
 )
 from ttab.loads.datasets.imagenet import ImageNetSyntheticShift, ImageNetValNaturalShift
 from ttab.loads.datasets.mnist import ColoredSyntheticShift
@@ -273,6 +275,12 @@ class ConstructTestDataset(object):
             helper_fn = self._get_mnist_test_domain_datasets_helper
         elif "waterbirds" in self.base_data_name:
             helper_fn = self._get_waterbirds_test_domain_datasets_helper
+        elif "yearbook" in self.base_data_name:
+            helper_fn = self._get_yearbook_test_domain_datasets_helper
+        else:
+            raise NotImplementedError(
+                f"invalid base_data_name={self.base_data_name} for test domain."
+            )
         return helper_fn
 
     def _get_cifar_test_domain_datasets_helper(
@@ -513,6 +521,33 @@ class ConstructTestDataset(object):
             split=split,
             device=self.device,
             data_augment=data_augment,
+            data_shift_class=data_shift_class,
+        )
+        return dataset
+    
+    def _get_yearbook_test_domain_datasets_helper(
+        self, test_domain: TestDomain, data_augment: bool = False, split: str = "test"
+    ) -> PyTorchDataset:
+        if test_domain.shift_type != "natural":
+            raise NotImplementedError(
+                f"invalid shift type={test_domain.shift_type} for yearbook dataset."
+            )
+
+        domain_path = os.path.join(self.data_path, self.base_data_name)
+        data_shift_class = functools.partial(
+            NaturalShiftedData,
+            data_name=test_domain.data_name,
+            new_data=YearBookDataset(
+                root=domain_path,
+                split=split,
+                device=self.device,
+            ).dataset,
+        )
+
+        dataset = YearBookDataset(
+            root=domain_path,
+            split=split,
+            device=self.device,
             data_shift_class=data_shift_class,
         )
         return dataset

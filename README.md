@@ -27,6 +27,7 @@ New algorithms can be easily added and run on all of the TTAB datasets.
 
 ## News
 
+- August 2023: We released a new benchmark dataset `Yearbook` with temporal shift. Similar to [Wild-Time](https://arxiv.org/abs/2211.14238), we use yearbook portraits (i.e., 14156 in-distribution photos in a random order) taken from 1930-1969 to pre-train a model (with a self-supervision auxiliary task) and use the other portraits (i.e., 19275 out-of-distribution photos arranged in the order of years) from 1970-2013 to test, which results in 98.8% in-distribution accuracy (98.0% reported in Wild-Time) and 82.4% out-of-distribution accuracy (79.5% reported in Wild-Time).
 - August 2023: We released a collection of experimental setups to help you reproduce our paper results. Check more details in [issue #4](https://github.com/LINs-lab/ttab/issues/4).
 - August 2023: We released an improved pretraining script based on what we used in our project, which can cover all of benchmark datasets mentioned in our paper except ImageNet.
 

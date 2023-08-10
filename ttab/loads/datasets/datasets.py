@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import functools
 import os
+import pickle
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
+import gdown
 import numpy as np
 import pandas as pd
 import torch
@@ -11,6 +13,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch import randperm
 from torch._utils import _accumulate
+
 from ttab.api import Batch, GroupBatch, PyTorchDataset
 from ttab.configs.datasets import dataset_defaults
 from ttab.loads.datasets.dataset_shifts import (
@@ -23,7 +26,6 @@ from ttab.loads.datasets.utils.preprocess_toolkit import get_transform
 group_attributes = {
     "waterbirds": 4,  # number of groups in the dataset.
 }
-
 
 class WrapperDataset(PyTorchDataset):
     def __init__(self, dataset: torch.utils.data.Dataset, device: str = "cuda"):
@@ -327,7 +329,7 @@ class OfficeHomeDataset(PyTorchDataset):
         )
 
     def split_data(
-        self, fractions: List[float], augment: List[bool], seed: int = None
+        self, fractions: List[float], augment: List[bool], seed: int = 0
     ) -> List[PyTorchDataset]:
         """This function is used to divide the dataset into two or more than two splits."""
         assert len(fractions) == len(augment)
@@ -680,6 +682,127 @@ class WBirdsDataset(PyTorchDataset):
     @staticmethod
     def prepare_batch(batch, device):
         return GroupBatch(*batch).to(device)
+
+
+class YearBookDataset(PyTorchDataset):
+    def __init__(
+        self,
+        root: str,
+        split: str,
+        device: str = "cuda",
+        data_shift_class: Optional[Callable] = None,
+        random_seed: int = None,
+    ):
+        self.transform = transforms.Compose([transforms.ToTensor()])
+        self.target_transform = None
+
+        # set up data.
+        # The details of preprocessed dataset: https://github.com/huaxiuyao/Wild-Time/blob/main/wildtime/data/yearbook.py#L44
+        self._download_yearbook(root)
+        original_dataset = pickle.load(open(os.path.join(root, "yearbook.pkl"), "rb"))
+
+        num_classes = dataset_defaults["yearbook"]["statistics"]["n_classes"]
+        self.classes = ["male", "female"]
+        self.class_to_index = {"male": 0, "female": 1}
+        self.split_point = 1970  # We follow the setup of Wild-Time to split the training and test set.
+
+        # init dataset.
+        dataset = self._prepare_splited_data(original_dataset, split, random_seed)
+        if data_shift_class is not None:
+            dataset = data_shift_class(dataset=dataset)
+
+        super().__init__(
+            dataset=dataset,
+            device=device,
+            prepare_batch=YearBookDataset.prepare_batch,
+            num_classes=num_classes,
+        )
+
+    @staticmethod
+    def prepare_batch(batch, device):
+        return Batch(*batch).to(device)
+
+    def _download_yearbook(self, data_dir: str) -> None:
+        """Download preprocessed yearbook dataset from Wild-Time: https://github.com/huaxiuyao/Wild-Time."""
+        if os.path.isfile(data_dir):
+            raise RuntimeError('Save path should be a directory!')
+        if not os.path.exists(data_dir):
+            os.mkdir(data_dir)
+        if os.path.isfile(os.path.join(data_dir, "yearbook.pkl")):
+            pass
+        else:
+            gdown.download(
+                url="https://drive.google.com/u/0/uc?id=1mPpxoX2y2oijOvW1ymiHEYd7oMu2vVRb&export=download",
+                output=os.path.join(data_dir, "yearbook.pkl"),
+                quiet=False
+            )
+
+    def _prepare_splited_data(self, orig_dataset: Dict[int, List], split: str, random_seed: int = None) -> torch.utils.data.Dataset:
+        list_years = list(sorted(orig_dataset.keys()))
+        if split == "train":
+            split_years = list(filter(lambda x: x < self.split_point, list_years))
+        elif split == "test":
+            split_years = list(filter(lambda x: x >= self.split_point, list_years))
+        else:
+            raise ValueError(f"Invalid split={split}")
+        data = []
+        targets = []
+
+        rng = np.random.default_rng(random_seed)
+        for year in split_years:
+            per_year_data = (orig_dataset[year][0]['images'] * 255.0).astype(np.uint8)
+            per_year_label = orig_dataset[year][0]['labels']
+            shuffle_indices = rng.permutation(len(per_year_label))
+            data.append(per_year_data[shuffle_indices])
+            targets.append(per_year_label[shuffle_indices])
+        
+        data = np.concatenate(data, axis=0)
+        targets = np.concatenate(targets, axis=0).tolist()
+
+        return ImageArrayDataset(
+            data=data,
+            targets=targets,
+            classes=self.classes,
+            class_to_index=self.class_to_index,
+            transform=self.transform,
+            target_transform=self.target_transform,
+        )
+    
+    def split_data(
+        self, fractions: List[float], seed: int = None
+    ) -> List[PyTorchDataset]:
+        """This function is used to divide the dataset into two or more than two splits."""
+        lengths = [int(f * len(self.dataset)) for f in fractions]
+        lengths[0] += len(self.dataset) - sum(lengths)
+
+        indices = randperm(
+            sum(lengths), generator=torch.Generator().manual_seed(seed)
+        ).tolist()
+        sub_indices = [
+            indices[offset - length : offset]
+            for offset, length in zip(_accumulate(lengths), lengths)
+        ]
+
+        sub_datasets = [
+            SubDataset(
+                data=self.dataset.data,
+                targets=self.dataset.targets,
+                indices=sub_indices[i],
+                transform=transforms.Compose([transforms.ToTensor()]),
+                target_transform=None,
+            )
+            for i in range(len(sub_indices))
+        ]
+
+        return [
+            PyTorchDataset(
+                dataset=dataset,
+                device=self._device,
+                prepare_batch=YearBookDataset.prepare_batch,
+                num_classes=self.num_classes,
+            )
+            for dataset in sub_datasets
+        ]
 
 
 class MergeMultiDataset(PyTorchDataset):
@@ -1078,8 +1201,9 @@ class SubDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         data_idx = self.indices[idx]
-        img_path = self.data[data_idx]
-        img = self.loader(img_path)
+        img = self.data[data_idx]
+        if isinstance(img, str):
+            img = self.loader(img)
         target = self.targets[self.indices[idx]]
 
         if self.transform is not None:

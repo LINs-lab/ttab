@@ -600,6 +600,10 @@ def resnet(
         return ResNetMNIST(
             num_classes, depth, in_dim, split_point, group_norm_num_groups
         )
+    elif "yearbook" in dataset:
+        return ResNetMNIST(
+            num_classes, depth, in_dim=3, split_point=split_point, group_norm_num_groups=group_norm_num_groups
+        )
     elif "cifar" in dataset:
         return ResNetCifar(
             num_classes, depth, split_point, group_norm_num_groups, grad_checkpoint

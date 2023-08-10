@@ -684,7 +684,7 @@ class CrossEntropyLabelSmooth(nn.Module):
     """
 
     def __init__(self, num_classes, device, epsilon=0.1, reduction=True):
-        super(CrossEntropyLabelSmooth, self).__init__()
+        super().__init__()
         self.num_classes = num_classes
         self.epsilon = epsilon
         self.reduction = reduction
@@ -715,7 +715,7 @@ class SupConLoss(nn.Module):
     It also supports the unsupervised contrastive loss in SimCLR"""
 
     def __init__(self, temperature=0.07, contrast_mode="all", base_temperature=0.07):
-        super(SupConLoss, self).__init__()
+        super().__init__()
         self.temperature = temperature
         self.contrast_mode = contrast_mode
         self.base_temperature = base_temperature
@@ -802,7 +802,7 @@ class SupConLoss(nn.Module):
 
 class HLoss(nn.Module):
     def __init__(self, temp_factor=1.0):
-        super(HLoss, self).__init__()
+        super().__init__()
         self.temp_factor = temp_factor
 
     def forward(self, x):

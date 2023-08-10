@@ -72,6 +72,7 @@ def get_args():
             "pacs",
             "coloredmnist",
             "waterbirds",
+            "yearbook",
         ],
         type=str,
     )

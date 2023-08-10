@@ -64,4 +64,8 @@ dataset_defaults = {
         },
         "img_shape": (224, 224, 3),
     },
+    "yearbook": {
+        "statistics": {"n_classes": 2,},
+        "img_shape": (32, 32, 3),
+    }
 }

@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Type
 
 import torch
 import torch.nn as nn
+
 import ttab.loads.datasets.loaders as loaders
 import ttab.loads.define_dataset as define_dataset
 import ttab.model_adaptation.utils as adaptation_utils
@@ -199,4 +200,6 @@ class BaseAdaptation(object):
 
     def copy_model(self):
         """copy and return the whole model."""
+        if self._meta_conf.model_adaptation_method == "ttt":
+            return copy.deepcopy(self._base_model)
         return copy.deepcopy(self._model)

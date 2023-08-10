@@ -8,7 +8,7 @@ __pycache__/
 
 ### generated files ###
 ckpt/
-datasets/
+data/
 logs/
 # pretrain/
 runs/

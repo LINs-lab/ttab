@@ -5,12 +5,14 @@ from typing import List
 
 import torch
 import torch.nn as nn
+
 import ttab.loads.define_dataset as define_dataset
 import ttab.model_adaptation.utils as adaptation_utils
 from ttab.api import Batch
 from ttab.loads.datasets.cifar.data_aug_cifar import tr_transforms_cifar
 from ttab.loads.datasets.imagenet.data_aug_imagenet import tr_transforms_imagenet
 from ttab.loads.datasets.mnist.data_aug_mnist import tr_transforms_mnist
+from ttab.loads.datasets.yearbook.data_aug_yearbook import tr_transforms_yearbook
 from ttab.model_adaptation.base_adaptation import BaseAdaptation
 from ttab.model_selection.base_selection import BaseSelection
 from ttab.model_selection.metrics import Metrics
@@ -146,6 +148,8 @@ class TTT(BaseAdaptation):
             return tr_transforms_imagenet
         elif self._meta_conf.base_data_name in ["coloredmnist"]:
             return tr_transforms_mnist
+        elif self._meta_conf.base_data_name in ["yearbook"]:
+            return tr_transforms_yearbook
 
     def one_adapt_step(
         self,

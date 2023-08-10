@@ -6,11 +6,13 @@ from typing import List
 
 import torch
 import torch.nn as nn
+
 import ttab.model_adaptation.utils as adaptation_utils
 from ttab.api import Batch
 from ttab.loads.datasets.cifar.data_aug_cifar import aug_cifar
 from ttab.loads.datasets.imagenet.data_aug_imagenet import aug_imagenet
 from ttab.loads.datasets.mnist.data_aug_mnist import aug_mnist
+from ttab.loads.datasets.yearbook.data_aug_yearbook import aug_yearbook
 from ttab.model_adaptation.base_adaptation import BaseAdaptation
 from ttab.model_selection.base_selection import BaseSelection
 from ttab.model_selection.metrics import Metrics
@@ -99,6 +101,8 @@ class MEMO(BaseAdaptation):
             return aug_imagenet
         elif self._meta_conf.base_data_name in ["coloredmnist"]:
             return aug_mnist
+        elif self._meta_conf.base_data_name in ["yearbook"]:
+            return aug_yearbook
 
     def one_adapt_step(
         self,

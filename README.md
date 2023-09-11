@@ -31,6 +31,40 @@ New algorithms can be easily added and run on all of the TTAB datasets.
 - August 2023: We released a collection of experimental setups to help you reproduce our paper results. Check more details in [issue #4](https://github.com/LINs-lab/ttab/issues/4).
 - August 2023: We released an improved pretraining script based on what we used in our project, which can cover all of benchmark datasets mentioned in our paper except ImageNet.
 
+## Available algorithms
+The [currently available algorithms](https://github.com/LINs-lab/ttab/tree/main/ttab/model_adaptation) are:
+
+- Batch Normalization Test-time Adaptation (BN_Adapt, [Schneider et al., 2020](https://arxiv.org/abs/2006.16971))
+- Source Hypothesis Transfer (SHOT, [Liang et al., 2020](https://arxiv.org/abs/2002.08546))
+- Test-time Training (TTT, [Sun et al., 2020](https://arxiv.org/abs/1909.13231))
+- Test-time Entropy Minimization (TENT, [Wang et al., 2021](https://arxiv.org/abs/2006.10726))
+- Test-time Template Adjuster (T3A, [Iwasawa & Matsuo, 2021](https://proceedings.neurips.cc/paper/2021/hash/1415fe9fea0fa1e45dddcff5682239a0-Abstract.html))
+- Marginal Entropy Minimization (MEMO, [Zhang et al., 2022](https://arxiv.org/abs/2110.09506))
+- Non-i.i.d.Test-time Adaptation (NOTE, [Gong et al., 2022](https://arxiv.org/abs/2208.05117))
+- Continual Test-time Adaptation (CoTTA, [Wang et al., 2022](https://arxiv.org/abs/2203.13591))
+- Conjugate Pseudo-Labels (Conjugate PL, [Goyal et al., 2022](https://arxiv.org/abs/2207.09640))
+- Efficient Anti-forgetting Test-time Adaptation (EATA, [Niu et al., 2022](https://arxiv.org/abs/2204.02610))
+- Sharpness-aware Entropy Minimization (SAR, [Niu et al., 2023](https://arxiv.org/abs/2302.12400))
+
+Send us a PR to add your algorithm! Our implementations use ResNets ([He et al., 2015](https://arxiv.org/abs/1512.03385)) and ViTs ([Dosovitskiy et al., 2020](https://arxiv.org/abs/2010.11929)) pretrained by ERM or self-supervised rotation prediction task ([Gidaris et al., 2018](https://arxiv.org/abs/1803.07728)).
+
+## Available datasets
+The [currently available datasets](https://github.com/LINs-lab/ttab/blob/main/ttab/loads/datasets/datasets.py) are:
+
+- CIFAR10 ([Krizhevsky et al., 2009](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf))
+- CIFAR10-C & ImageNet-C ([Hendrycks & Dietterich, 2019](https://arxiv.org/abs/1903.12261))
+- CIFAR10.1 ([Recht et al., 2018](https://arxiv.org/abs/1806.00451))
+- ImageNet ([Deng et al., 2009](https://ieeexplore.ieee.org/document/5206848))
+- ImageNet-V2 ([Recht et al., 2019](https://arxiv.org/abs/1902.10811))
+- OfficeHome ([Venkateswara et al., 2017](https://arxiv.org/abs/1706.07522))
+- PACS ([Li et al., 2017](https://arxiv.org/abs/1710.03077))
+- ColoredMNIST ([Arjovsky et al., 2019](https://arxiv.org/abs/1907.02893))
+- Waterbirds ([Sagawa et al., 2019](https://arxiv.org/abs/1911.08731))
+- Yearbook ([Ginosar et al., 2015](https://arxiv.org/abs/1511.02575))
+
+Send us a PR to add your dataset! Any custom image dataset with folder structure `dataset/domain/class/image.xyz` is readily usable.
+
+
 ## Installation
 To run a baseline test, please prepare the relevant pre-trained checkpoints for the base model and place them in `pretrain/ckpt/`.
 ### Requirements

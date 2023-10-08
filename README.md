@@ -205,6 +205,15 @@ python run_exps.py --script_path exps/officehome.py --num_jobs_per_node 2 --num_
 python run_exps.py --script_path exps/pacs.py --num_jobs_per_node 2 --num_jobs_per_script 1 --wait_in_seconds_per_job 3
 ```
 
+Run the commands above result in many log files. To extract results in generated log files, one can run
+```bash
+python run_extract.py --in_dir <log_dir>
+```
+
+We provide several tools to work with these log files. For further analyze, please check a basic version of notebook in `notebooks/example.ipynb`.
+
+
+
 <!-- ## Algorithms
 
 In the `ttab/model_adaptation` folder, we provide implementations of the TTA algorithms benchmarked in our paper. We use unified setups for the base model, datasets, hyperparameters, and evaluators, so new algorithms can be easily added and run on all of the TTAB datasets.

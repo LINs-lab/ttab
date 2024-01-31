@@ -17,3 +17,5 @@ runs/
 *.sh
 *.ipynb
 *.txt
+
+datasets/

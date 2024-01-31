@@ -92,4 +92,13 @@ algorithm_defaults = {
         * 0.40,  # The threshold for reliable minimization in SAR.
         "reset_constant_em": 0.2,  # threshold e_m for model recovery scheme
     },
+    "rotta":{
+        "optimizer": "Adam",
+        "nu": 0.001,
+        "memory_size": 64,
+        "update_frequency": 64,
+        "lambda_t": 1.0,
+        "lambda_u": 1.0,
+        "alpha": 0.05,
+    }
 }

@@ -12,6 +12,7 @@ data/
 logs/
 # pretrain/
 runs/
+todo/
 *.out
 *.pth
 *.sh

@@ -4,7 +4,7 @@ This repository is the official implementation of
 <br>
 **[On Pitfalls of Test-time Adaptation](https://arxiv.org/abs/2306.03536)**, ICML, 2023
 <br>
-<a href="https://people.epfl.ch/hao.zhao/?lang=en">Hao Zhao*</a>,
+<a href="https://marcelluszhao.github.io/">Hao Zhao*</a>,
 <a href="https://sites.google.com/view/yuejiangliu">Yuejiang Liu*</a>,
 <a href="https://people.epfl.ch/alexandre.alahi/?lang=en">Alexandre Alahi</a>,
 <a href="https://tlin-taolin.github.io">Tao Lin</a>

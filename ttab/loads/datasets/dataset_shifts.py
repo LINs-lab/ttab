@@ -127,6 +127,8 @@ class NaturalShiftedData(ShiftedData):
         # replace original data/targets with new data/targets
         self.dataset.data = new_data.data
         self.dataset.targets = new_data.targets
+        self.dataset.data_size = len(self.dataset.data)
+        self.dataset.indices = list([x for x in range(0, self.dataset.data_size)])
         self.data_name = data_name
 
 

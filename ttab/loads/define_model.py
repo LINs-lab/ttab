@@ -3,7 +3,6 @@ import os
 
 import timm
 import torch
-from ttab.loads.models.wideresnet_robust_bench import WideResNetRB
 import ttab.model_adaptation.utils as adaptation_utils
 from torch import nn
 from ttab.loads.models import WideResNet, cct_7_3x1_32, resnet
@@ -116,17 +115,7 @@ def define_model(config):
         return timm.create_model(config.model_name, pretrained=True)
 
     # use built-in models and local checkpoints.
-    if "wideresnetrb" in config.model_name:
-        components = config.model_name.split("_")
-        depth = int(components[0].replace("wideresnetrb", ""))
-        widen_factor = int(components[1])
-        init_model = WideResNetRB(
-            depth,
-            config.statistics["n_classes"],
-            widen_factor,
-            dropout_rate=0.0,
-        )
-    elif "wideresnet" in config.model_name:
+    if "wideresnet" in config.model_name:
         components = config.model_name.split("_")
         depth = int(components[0].replace("wideresnet", ""))
         widen_factor = int(components[1])

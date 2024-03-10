@@ -38,7 +38,7 @@ default_scenarios = {
     ),
     "PTTA_cifar10": Scenario(
         task="classification",
-        model_name="wideresnetrb28_10",
+        model_name="resnet26",
         model_adaptation_method="rotta",
         model_selection_method="last_iterate",
         base_data_name="cifar10",

@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from ttab.api import Batch
 from ttab.model_adaptation.base_adaptation import BaseAdaptation
+from ttab.model_adaptation.utils import RobustBN1d, RobustBN2d
 from ttab.model_selection.base_selection import BaseSelection
 from ttab.model_selection.metrics import Metrics
 from ttab.utils.logging import Logger
@@ -33,7 +34,7 @@ class Rotta(BaseAdaptation):
             lambda_u=self._meta_conf.lambda_u,
         )
         self.model_ema = self.build_ema(self._model)
-        self.transform = get_tta_transforms(self._meta_conf)
+        self.transform = self.get_tta_transforms(self._meta_conf)
         self.nu = self._meta_conf.nu
         self.update_frequency = self._meta_conf.update_frequency
         self.current_instance = 0
@@ -49,7 +50,7 @@ class Rotta(BaseAdaptation):
                 normlayer_names.append(name)
 
         for name in normlayer_names:
-            bn_layer = get_named_submodule(model, name)
+            bn_layer = self.get_named_submodule(model, name)
             if isinstance(bn_layer, nn.BatchNorm1d):
                 NewBN = RobustBN1d
             elif isinstance(bn_layer, nn.BatchNorm2d):
@@ -59,7 +60,7 @@ class Rotta(BaseAdaptation):
 
             momentum_bn = NewBN(bn_layer, self._meta_conf.alpha)
             momentum_bn.requires_grad_(True)
-            set_named_submodule(model, name, momentum_bn)
+            self.set_named_submodule(model, name, momentum_bn)
         return model.to(self._meta_conf.device)
 
     def one_adapt_step(
@@ -139,8 +140,8 @@ class Rotta(BaseAdaptation):
             strong_sup_aug = self.transform(sup_data)
             ema_sup_out = self.model_ema(sup_data)
             stu_sup_out = model(strong_sup_aug)
-            instance_weight = timeliness_reweighting(ages)
-            l_sup = (softmax_entropy(stu_sup_out, ema_sup_out) * instance_weight).mean()
+            instance_weight = self.timeliness_reweighting(ages)
+            l_sup = (self.softmax_entropy(stu_sup_out, ema_sup_out) * instance_weight).mean()
 
         l = l_sup
         if l is not None:
@@ -244,6 +245,17 @@ class Rotta(BaseAdaptation):
         for ema_param, param in zip(ema_model.parameters(), model.parameters()):
             ema_param.data[:] = (1 - nu) * ema_param[:].data[:] + nu * param[:].data[:]
         return ema_model
+    
+    @staticmethod
+    def timeliness_reweighting(ages):
+        if isinstance(ages, list):
+            ages = torch.tensor(ages).float().cuda()
+        return torch.exp(-ages) / (1 + torch.exp(-ages))
+    
+    @staticmethod
+    @torch.jit.script
+    def softmax_entropy(x, x_ema):
+        return -(x_ema.softmax(1) * x.log_softmax(1)).sum(1)
 
     def _initialize_trainable_parameters(self):
         names = []
@@ -255,18 +267,65 @@ class Rotta(BaseAdaptation):
                 params.append(p)
 
         return params, names
+    
+    @staticmethod
+    def get_tta_transforms(cfg, gaussian_std: float = 0.005, soft=False):
+        img_shape = (*cfg.img_shape, 3)
+        n_pixels = img_shape[0]
 
+        clip_min, clip_max = 0.0, 1.0
 
-def timeliness_reweighting(ages):
-    if isinstance(ages, list):
-        ages = torch.tensor(ages).float().cuda()
-    return torch.exp(-ages) / (1 + torch.exp(-ages))
+        p_hflip = 0.5
 
+        tta_transforms = transforms.Compose(
+            [
+                Clip(0.0, 1.0),
+                ColorJitterPro(
+                    brightness=[0.8, 1.2] if soft else [0.6, 1.4],
+                    contrast=[0.85, 1.15] if soft else [0.7, 1.3],
+                    saturation=[0.75, 1.25] if soft else [0.5, 1.5],
+                    hue=[-0.03, 0.03] if soft else [-0.06, 0.06],
+                    gamma=[0.85, 1.15] if soft else [0.7, 1.3],
+                ),
+                transforms.Pad(padding=int(n_pixels / 2), padding_mode="edge"),
+                transforms.RandomAffine(
+                    degrees=[-8, 8] if soft else [-15, 15],
+                    translate=(1 / 16, 1 / 16),
+                    scale=(0.95, 1.05) if soft else (0.9, 1.1),
+                    shear=None,
+                    interpolation=PIL.Image.BILINEAR,
+                    fill=None,
+                ),
+                transforms.GaussianBlur(
+                    kernel_size=5, sigma=[0.001, 0.25] if soft else [0.001, 0.5]
+                ),
+                transforms.CenterCrop(size=n_pixels),
+                transforms.RandomHorizontalFlip(p=p_hflip),
+                GaussianNoise(0, gaussian_std),
+                Clip(clip_min, clip_max),
+            ]
+        )
+        return tta_transforms
+    
+    @staticmethod
+    def get_named_submodule(model, sub_name: str):
+        names = sub_name.split(".")
+        module = model
+        for name in names:
+            module = getattr(module, name)
 
-@torch.jit.script
-def softmax_entropy(x, x_ema):
-    return -(x_ema.softmax(1) * x.log_softmax(1)).sum(1)
+        return module
 
+    @staticmethod
+    def set_named_submodule(model, sub_name, value):
+        names = sub_name.split(".")
+        module = model
+        for i in range(len(names)):
+            if i != len(names) - 1:
+                module = getattr(module, names[i])
+
+            else:
+                setattr(module, names[i], value)
 
 # ========== Memory ==========
 class MemoryItem:
@@ -388,121 +447,7 @@ class CSTU:
 
         return tmp_data, tmp_age
 
-
-# ========== bn_layers ==========
-class MomentumBN(nn.Module):
-    def __init__(self, bn_layer: nn.BatchNorm2d, momentum):
-        super().__init__()
-        self.num_features = bn_layer.num_features
-        self.momentum = momentum
-        if (
-            bn_layer.track_running_stats
-            and bn_layer.running_var is not None
-            and bn_layer.running_mean is not None
-        ):
-            self.register_buffer("source_mean", deepcopy(bn_layer.running_mean))
-            self.register_buffer("source_var", deepcopy(bn_layer.running_var))
-            self.source_num = bn_layer.num_batches_tracked
-        self.weight = deepcopy(bn_layer.weight)
-        self.bias = deepcopy(bn_layer.bias)
-
-        self.register_buffer("target_mean", torch.zeros_like(self.source_mean))
-        self.register_buffer("target_var", torch.ones_like(self.source_var))
-        self.eps = bn_layer.eps
-
-        self.current_mu = None
-        self.current_sigma = None
-
-    def forward(self, x):
-        raise NotImplementedError
-
-
-class RobustBN1d(MomentumBN):
-    def forward(self, x):
-        if self.training:
-            b_var, b_mean = torch.var_mean(
-                x, dim=0, unbiased=False, keepdim=False
-            )  # (C,)
-            mean = (1 - self.momentum) * self.source_mean + self.momentum * b_mean
-            var = (1 - self.momentum) * self.source_var + self.momentum * b_var
-            self.source_mean, self.source_var = deepcopy(mean.detach()), deepcopy(
-                var.detach()
-            )
-            mean, var = mean.view(1, -1), var.view(1, -1)
-        else:
-            mean, var = self.source_mean.view(1, -1), self.source_var.view(1, -1)
-
-        x = (x - mean) / torch.sqrt(var + self.eps)
-        weight = self.weight.view(1, -1)
-        bias = self.bias.view(1, -1)
-
-        return x * weight + bias
-
-
-class RobustBN2d(MomentumBN):
-    def forward(self, x):
-        if self.training:
-            b_var, b_mean = torch.var_mean(
-                x, dim=[0, 2, 3], unbiased=False, keepdim=False
-            )  # (C,)
-            mean = (1 - self.momentum) * self.source_mean + self.momentum * b_mean
-            var = (1 - self.momentum) * self.source_var + self.momentum * b_var
-            self.source_mean, self.source_var = deepcopy(mean.detach()), deepcopy(
-                var.detach()
-            )
-            mean, var = mean.view(1, -1, 1, 1), var.view(1, -1, 1, 1)
-        else:
-            mean, var = self.source_mean.view(1, -1, 1, 1), self.source_var.view(
-                1, -1, 1, 1
-            )
-
-        x = (x - mean) / torch.sqrt(var + self.eps)
-        weight = self.weight.view(1, -1, 1, 1)
-        bias = self.bias.view(1, -1, 1, 1)
-
-        return x * weight + bias
-
-
 # ========== custom_transforms ==========
-def get_tta_transforms(cfg, gaussian_std: float = 0.005, soft=False):
-    img_shape = (*cfg.img_shape, 3)
-    n_pixels = img_shape[0]
-
-    clip_min, clip_max = 0.0, 1.0
-
-    p_hflip = 0.5
-
-    tta_transforms = transforms.Compose(
-        [
-            Clip(0.0, 1.0),
-            ColorJitterPro(
-                brightness=[0.8, 1.2] if soft else [0.6, 1.4],
-                contrast=[0.85, 1.15] if soft else [0.7, 1.3],
-                saturation=[0.75, 1.25] if soft else [0.5, 1.5],
-                hue=[-0.03, 0.03] if soft else [-0.06, 0.06],
-                gamma=[0.85, 1.15] if soft else [0.7, 1.3],
-            ),
-            transforms.Pad(padding=int(n_pixels / 2), padding_mode="edge"),
-            transforms.RandomAffine(
-                degrees=[-8, 8] if soft else [-15, 15],
-                translate=(1 / 16, 1 / 16),
-                scale=(0.95, 1.05) if soft else (0.9, 1.1),
-                shear=None,
-                interpolation=PIL.Image.BILINEAR,
-                fill=None,
-            ),
-            transforms.GaussianBlur(
-                kernel_size=5, sigma=[0.001, 0.25] if soft else [0.001, 0.5]
-            ),
-            transforms.CenterCrop(size=n_pixels),
-            transforms.RandomHorizontalFlip(p=p_hflip),
-            GaussianNoise(0, gaussian_std),
-            Clip(clip_min, clip_max),
-        ]
-    )
-    return tta_transforms
-
-
 class GaussianNoise(torch.nn.Module):
     def __init__(self, mean=0.0, std=1.0):
         super().__init__()
@@ -641,24 +586,3 @@ class ColorJitterPro(ColorJitter):
         format_string += ", hue={0})".format(self.hue)
         format_string += ", gamma={0})".format(self.gamma)
         return format_string
-
-
-# ========= utils ==========
-def get_named_submodule(model, sub_name: str):
-    names = sub_name.split(".")
-    module = model
-    for name in names:
-        module = getattr(module, name)
-
-    return module
-
-
-def set_named_submodule(model, sub_name, value):
-    names = sub_name.split(".")
-    module = model
-    for i in range(len(names)):
-        if i != len(names) - 1:
-            module = getattr(module, names[i])
-
-        else:
-            setattr(module, names[i], value)
